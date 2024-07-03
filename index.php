@@ -1,0 +1,67 @@
+<?php
+    class Router{
+        private $routes;
+
+        public function __construct(array $routes)
+        {
+            $this->routes = $routes;
+        }
+
+        public function handleRequest()
+        {
+            $url = $this->sanitizeUrl($_GET['url'] ?? '/');
+
+            if ($this->isValidUrl($url)) {
+                $this->routeRequest($url);
+            } else {
+                $this->showError('Invalid URL');
+            }
+        }
+
+        private function sanitizeUrl($url)
+        {
+            return htmlspecialchars($url);
+        }
+
+        private function isValidUrl($url)
+        {
+            return preg_match('/^[a-zA-Z0-9\/]+$/', $url);
+        }
+
+        private function routeRequest($url)
+        {
+            if (array_key_exists($url, $this->routes)) {
+                list($folder, $file) = array_map('htmlspecialchars', explode('/', $this->routes[$url], 2));
+                $filePath = 'App/' . $folder . '/' . $file;
+
+                $this->includeFile($filePath);
+            } else {
+                $this->showError('404 Not Found');
+            }
+        }
+
+        private function includeFile($filePath)
+        {
+            if (file_exists($filePath)) {
+                include $filePath;
+            } else {
+                $this->showError('404 Not Found');
+            }
+        }
+
+        private function showError($message)
+        {
+            echo $message;
+            exit;
+        }
+    }
+
+    $PrincipalesRoutes = include 'App/Routes/Principales_Routes.php';
+
+    $routes = array_merge($PrincipalesRoutes, [
+        '/' => 'Views/Principales/Index.php',
+    ]);
+
+    $router = new Router($routes);
+    $router->handleRequest();
+?>
